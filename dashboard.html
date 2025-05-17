@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Duty Assignment Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #fafbfc; padding: 0; margin: 0;}
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+            border-bottom: 1px solid #e3e3e3;
+            padding: 8px 20px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .topbar .depot { color: #1e88e5; }
+        .topbar .datetime { color: #333; letter-spacing: 0.5px;}
+        .topbar .user {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+            font-size: 14px;
+            color: #222;
+            user-select: none;
+        }
+        .admin-badge {
+            display: flex;
+            align-items: center;
+            background: #ffe082;
+            color: #b8860b;
+            font-weight: bold;
+            border-radius: 12px;
+            padding: 2px 10px 2px 6px;
+            margin-right: 10px;
+            font-size: 14px;
+            box-shadow: 0 1px 5px rgba(255,193,7,0.08);
+            gap: 4px;
+        }
+        .admin-icon {
+            font-size: 17px;
+            margin-right: 3px;
+        }
+        .topbar .avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #e3e3e3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            color: #1976d2;
+        }
+        .form-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 20px;
+        }
+        .form-row label { font-size: 13px; font-weight: 600; }
+        .form-row select, .form-row input[type="date"], .form-row input[type="text"] {
+            font-size: 13px;
+            padding: 2px 6px;
+            height: 28px;
+            border: 1px solid #bbb;
+            border-radius: 2px;
+            min-width: 120px;
+            background: #fff;
+        }
+        .form-row input[type="text"] { width: 100px; }
+        .main-table {
+            border-collapse: collapse;
+            width: 100%;
+            background: #fff;
+            font-size: 13px;
+        }
+        .main-table th, .main-table td {
+            border: 1px solid #d3d3d3;
+            padding: 4px 6px;
+            text-align: center;
+            min-width: 70px;
+            height: 32px;
+        }
+        .main-table th {
+            background: #f3f6fb;
+            font-weight: bold;
+        }
+        .main-table select, .main-table input[type="number"], .main-table input[type="text"] {
+            font-size: 13px;
+            padding: 2px 4px;
+            height: 24px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 2px;
+            background: #fff;
+        }
+        .btn-save, .btn-heldup, .btn-reset {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 2px;
+            margin-bottom: 0;
+        }
+        .btn-save {
+            background: #4CAF50;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-heldup {
+            background: #e53935;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-reset {
+            background: #ffc107;
+            color: #333;
+            border: none;
+            cursor: pointer;
+            margin-left: 2px;
+        }
+        .btn-save:hover { background: #388e3c; }
+        .btn-heldup:hover { background: #b71c1c; }
+        .btn-reset:hover { background: #ff9800; }
+        .saved { background: #fff9c4 !important; }
+        .heldup { background: #ffcdd2 !important; }
+        .hidden { display: none !important; }
+        .toast {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            min-width: 180px;
+            max-width: 320px;
+            background: #323232;
+            color: #fff;
+            padding: 12px 18px;
+            border-radius: 6px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+            font-size: 14px;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 9999;
+            transition: opacity 0.4s, transform 0.4s;
+            transform: translateY(40px);
+        }
+        .toast.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+        .toast.error {
+            background: #e53935;
+        }
+        .toast.success {
+            background: #388e3c;
+        }
+        .custom-suggestions {
+            position: absolute;
+            left: 0; right: 0; top: 100%;
+            background: #fff;
+            border: 1px solid #bbb;
+            border-radius: 0 0 4px 4px;
+            z-index: 100;
+            max-height: 180px;
+            overflow-y: auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.09);
+            display: none;
+        }
+        .custom-suggestions.show { display: block; }
+        .custom-suggestions div {
+            padding: 7px 12px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .custom-suggestions .active,
+        .custom-suggestions div:hover {
+            background: #e3f2fd;
+        }
+        .input-wrap { position: relative; }
+        @media (max-width: 900px) {
+            .main-table th, .main-table td { font-size: 11px; min-width: 50px; }
+            .form-row select, .form-row input[type="date"], .form-row input[type="text"] {
+                min-width: 80px; font-size: 11px; height: 24px;
+            }
+            .topbar { font-size: 13px; padding: 6px 8px;}
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <span class="depot">DEPOT: INDRAPRASTHA DEPOT</span>
+        <span class="datetime" id="datetime"></span>
+        <span class="user" id="userNameDisplay">
+            <span class="admin-badge">
+                <span class="admin-icon">&#128081;</span>
+                <span class="admin-name">Dharmveer</span>
+            </span>
+            <span class="avatar">&#128100;</span>
+            <span id="userNameText">Select MIS Name</span>
+        </span>
+    </div>
+    <div class="form-row">
+        <label for="opdate">Select Operation Date:</label>
+        <input type="date" id="opdate" value="">
+        <label for="misname">Select MIS Name:</label>
+        <select id="misname">
+            <option value="">Select MIS Name</option>
+            <option>Himanshu Goswami</option>
+            <option>Keshav</option>
+            <option>Vijay Thakur</option>
+        </select>
+        <input type="text" placeholder="Search">
+        <button id="downloadExcel">Download Excel</button>
+    </div>
+    <div style="text-align:right; margin: 18px 20px 0 0;">
+        <button id="saveToGoogleSheet" style="background:#1976d2;color:#fff;padding:7px 18px;border:none;border-radius:3px;font-size:15px;cursor:pointer;">
+            Save All to Google Sheet
+        </button>
+    </div>
+    <table class="main-table" id="dutyTable">
+        <thead>
+        <tr>
+            <th>S.No.</th>
+            <th>Duty No</th>
+            <th>Sch. Km</th>
+            <th>Bus</th>
+            <th>Driver</th>
+            <th>Driver Name</th>
+            <th>Out ODO</th>
+            <th>In ODO</th>
+            <th>Operate Km</th>
+            <th>Time Marker</th>
+            <th>Action</th>
+        </tr>
+        </thead>
+        <tbody id="dutyTableBody">
+        <!-- Duty rows will be generated by JS -->
+        </tbody>
+    </table>
+    <div id="toast" class="toast"></div>
+    <script>
+        // ========================== DATA ==========================
+        // Duty List
+        const dutyList = [
+            ["156/4",109.6],["156/4A",109.6],["156/6",109.6],["156/6A",109.6],["156/10",109.6],["156/10A",109.6],
+            ["213A/4",97.5],["213A/4A",101.9],["213A/6",97.5],["213A/6A",101.9],["213A/8",97.5],["213A/8A",101.9],
+            ["213A/10",97.5],["213A/10A",101.9],["213A/12",97.5],["213A/12A",101.9],["213A/14",97.5],["213A/14A",101.9],
+            ["213A/16",97.5],["213A/16A",101.9],["213A/18",97.5],["213A/18A",101.9],["213A/20",97.5],["213A/20A",101.9],
+            ["267/8",122.4],["267/8A",122.4],
+            ["307/2",118.8],["307/2A",118.8],["307/4",118.8],["307/4A",118.8],["307/6",118.8],["307/6A",118.8],
+            ["307/8",118.8],["307/8A",118.8],["307/10",118.8],["307/10A",118.8],["307/12",118.8],["307/12A",118.8],
+            ["307/14",118.8],["307/14A",118.8],["307/16",118.8],["307/16A",118.8],["307/18",118.8],["307/18A",118.8],
+            ["307/20",118.8],["307/20A",118.8],
+            ["317/2",98.5],["317/2A",98.5],["317/4",98.5],["317/4A",98.5],["317/6",98.5],["317/6A",98.5],["317/8",98.5],["317/8A",98.5],
+            ["317/10",98.5],["317/10A",98.5],["317/12",98.5],["317/12A",98.5],
+            ["320/4",102.9],["320/4A",105.2],["320/8",102.9],["320/8A",105.2],["320/14",102.9],["320/14A",105.2],
+            ["340/4",98.9],["340/4A",103.3],["340/6",98.9],["340/6A",103.3],["340/8",98.9],["340/8A",103.3],["340/10",98.9],["340/10A",103.3],
+            ["340/12",98.9],["340/12A",103.3],["340/14",98.9],["340/14A",103.3],
+            ["359/2",112.9],["359/2A",112.9],["359/4",112.9],["359/4A",112.9],["359/6",112.9],["359/6A",112.9],["359/8",112.9],["359/8A",112.9],
+            ["359/10",112.9],["359/10A",112.9],["359/12",112.9],["359/12A",112.9],["359/14",112.9],["359/14A",112.9],
+            ["370/2",117.1],["370/2A",117.1],["370/4",117.1],["370/4A",117.1],
+            ["378/2",111.4],["378/2A",111.4],["378/4",111.4],["378/4A",111.4],["378/6",111.4],["378/6A",111.4],["378/10",111.4],["378/10A",111.4],
+            ["378/12",111.4],["378/12A",111.4],
+            ["380/4",105.1],["380/4A",105.1],["380/8",105.1],["380/8A",105.1],
+            ["390/6",111],["390/6A",110.5],
+            ["391/4",111.2],["391/4A",111.2],["391/6",111.2],["391/6A",111.2],["391/8",111.2],["391/8A",111.2],["391/10",111.2],["391/10A",111.2],
+            ["391/12",111.2],["391/12A",111.2],
+            ["413/2",96.3],["413/2A",96.3],["413/4",96.3],["413/4A",96.3],["413/6",96.3],["413/6A",96.3],["413/8",96.3],["413/8A",96.3],
+            ["413/10",96.3],["413/10A",96.3],["413/12",96.3],["413/12A",96.3],["413/14",96.3],["413/14A",96.3],["413/16",96.3],["413/16A",96.3],
+            ["427/2",118.7],["427/2A",118.8],["427/4",118.7],["427/4A",118.8],["427/6",118.7],["427/6A",118.8],["427/8",118.7],["427/8A",118.8],
+            ["427/10",118.7],["427/10A",118.8],["427/12",118.7],["427/12A",118.8],
+            ["456/2",115.9],["456/2A",115.9],["456/4",115.9],["456/4A",115.9],["456/6",115.9],["456/6A",115.9],["456/8",115.9],["456/8A",115.9],
+            ["456/10",115.9],["456/10A",115.9],["456/12",115.9],["456/12A",115.9],["456/14",115.9],["456/14A",115.9],["456/16",115.9],["456/16A",115.9],
+            ["456/20",115.9],["456/20A",115.9],
+            ["473./4",119.3],["473./4A",119.3],["473./12",119.3],["473./12A",119.3],["473./20",119.3],["473./20A",119.3],["473./28",119.3],["473./28A",119.3],
+            ["473./32",119.3],["473./32A",119.3],["473./36",119.3],["473./36A",119.3],["473./44",119.3],["473./44A",119.3],["473./48",119.3],["473./48A",119.3],
+            ["473./50",119.3],["473./50A",119.3],["473./52",119.3],["473./52A",119.3],
+            ["505/2",112.2],["505/2A",112.2],["505/4",112.2],["505/4A",112.2],["505/6",112.2],["505/6A",112.2],["505/8",112.2],["505/8A",112.2],
+            ["505/10",112.2],["505/10A",112.2],["505/12",112.2],["505/12A",112.2],["505/14",112.2],["505/14A",112.2],
+            ["751E/2",119.3],["751E/2A",123.7],["751E/6",119.3],["751E/6A",123.7],["751E/10",119.3],["751E/10A",123.7],
+            ["763/8",109.6],["763/8A",109.6],["763/12",109.6],["763/12A",109.6],
+            ["780E/4",113.1],["780E/4A",113.1],["780E/6",113.1],["780E/6A",113.1],["780E/8",113.1],["780E/8A",113.1],["780E/10",113.1],["780E/10A",113.1],
+            ["781A/2",120.2],["781A/2A",120.2],["781A/4",120.2],["781A/4A",120.2],["781A/8",120.2],["781A/8A",120.2],["781A/26",120.2],["781A/26A",120.2],
+            ["859/4",101.8],["859/4A",101.8],["859/6",101.8],["859/6A",101.8],
+            ["871A/12",96],["871A/12A",96],
+            ["944/2",98],["944/2A",98],["944/4",98],["944/4A",98],["944/6",98],["944/6A",98],["944/8",98],["944/8A",98],["944/10",98],["944/10A",98],
+            ["944/12",98],["944/12A",98],
+            ["946/4",104.9],["946/4A",104.9],["946/6",104.9],["946/6A",104.9],["946/8",104.9],["946/8A",104.9],["946/10",104.9],["946/10A",104.9],
+            ["946/12",104.9],["946/12A",104.9],["946/14",104.9],["946/14A",104.9],["946/16",104.9],["946/16A",104.9],["946/18",104.9],["946/18A",104.9],
+            ["946/20",104.9],["946/20A",104.9],["946/22",104.9],["946/22A",104.9],
+            ["956/4",109.1],["956/4A",114],
+            ["971/2",100],["971/2A",100],["971/4",100],["971/4A",100],["971/6",100],["971/6A",100],["971/8",100],["971/8A",100],["971/10",100],["971/10A",100],
+            ["971/12",100],["971/12A",100],["971/14",100],["971/14A",100],["971/16",100],["971/16A",100],["971/18",100],["971/18A",100],["971/20",100],["971/20A",100],
+            ["971/22",100],["971/22A",100],["971/24",100],["971/24A",100],["971/26",100],["971/26A",100],["971/28",100],["971/28A",100],["971/30",100],["971/30A",100],
+            ["CBD-2(-)/6",98.5],["CBD-2(-)/6A",98.5],["CBD-2(+)/8",100.3],["CBD-2(+)/8A",100.3]
+        ];
+
+        // Bus Numbers
+        const busNumbers = [
+            "DL1PD5031","DL1PD5068","DL1PD5041","DL1PD5023","DL1PD5748","DL1PD5327","DL1PD4997","DL1PD5696","DL1PD5693","DL1PD5752",
+            "DL1PD5709","DL1PD5698","DL1PD5711","DL1PD5097","DL1PD5308","DL1PD5132","DL1PD5142","DL1PD5091","DL1PD5705","DL1PD5036",
+            "DL1PD5106","DL1PD5192","DL1PD5150","DL1PD4987","DL1PD5055","DL1PD5733","DL1PD5049","DL1PD5092","DL1PD5691","DL1PD5755",
+            "DL1PD5113","DL1PD5200","DL1PD5065","DL1PD5761","DL1PD5212","DL1PD5057","DL1PD5264","DL1PD5075","DL1PD5263","DL1PD5017",
+            "DL1PD6234","DL1PD5704","DL1PD5729","DL1PD5695","DL1PD5764","DL1PD5160","DL1PD5760","DL1PD5242","DL1PD5732","DL1PD5238",
+            "DL1PD5738","DL1PD5766","DL1PD5153","DL1PD5034","DL1PD5246","DL1PD5105","DL1PD4993","DL1PD5278","DL1PD5124","DL1PD5101",
+            "DL1PD5176","DL1PD5095","DL1PD5083","DL1PD5745","DL1PD5100","DL1PD5087","DL1PD5715","DL1PD5211","DL1PD5147","DL1PD5259",
+            "DL1PD5256","DL1PD5146","DL1PD5143","DL1PD5157","DL1PD5048","DL1PD5028","DL1PD5688","DL1PD5171","DL1PD5177","DL1PD5718",
+            "DL1PD5127","DL1PD5286","DL1PD5753","DL1PD5145","DL1PD5690","DL1PD5144","DL1PD5735","DL1PD5771","DL1PD5074","DL1PD5186",
+            "DL1PD5189","DL1PD5682","DL1PD5110","DL1PD5734","DL1PD5120","DL1PD5152","DL1PD5731","DL1PD5005","DL1PD5042","DL1PD5129",
+            "DL1PD5736","DL1PD5681","DL1PD5336","DL1PD5252","DL1PD5040","DL1PD5697","DL1PD5325","DL1PD6180","DL1PD5015","DL1PD5284",
+            "DL1PD5139","DL1PD5241","DL1PD5712","DL1PD5059","DL1PD5030","DL1PD5276","DL1PD5217","DL1PD5751","DL1PD5140","DL1PD5126",
+            "DL1PD5197","DL1PD5717","DL1PD5014","DL1PD5754","DL1PD5302","DL1PD5029","DL1PD5194","DL1PD5776","DL1PD5085","DL1PD5728",
+            "DL1PD5699","DL1PD5165","DL1PD5136","DL1PD5706","DL1PD5172","DL1PD5739","DL1PD5232","DL1PD5169","DL1PD5162"
+        ];
+
+        // Driver master list (ID: Name)
+        const driverMaster = {
+            "1001": "SHYAM SUNDER",
+            "1002": "MAHENDER",
+            "1003": "OM PRAKASH",
+            "1004": "ASHWANI KUMAR",
+            "1005": "SURINDER KUMAR",
+            "1006": "SURENDER SINGH",
+            "1007": "SHRI BHAGWAN",
+            "1008": "JITENDER KUMAR",
+            "1009": "NASEEM AHMAD",
+            "1010": "OM SINGH"
+        };
+        const driverNumbers = Object.keys(driverMaster);
+
+        // ========================== JS LOGIC ==========================
+
+        function generateDutyRows() {
+            const tbody = document.getElementById('dutyTableBody');
+            tbody.innerHTML = '';
+            dutyList.forEach((duty, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${idx+1}.</td>
+                    <td>${duty[0]}</td>
+                    <td class="sch-km">${duty[1]}</td>
+                    <td class="input-wrap">
+                        <input type="text" class="bus-input" placeholder="Select Bus" autocomplete="off">
+                        <div class="custom-suggestions"></div>
+                    </td>
+                    <td class="input-wrap">
+                        <input type="text" class="driver-input" placeholder="Select Driver" autocomplete="off">
+                        <div class="custom-suggestions"></div>
+                    </td>
+                    <td class="driver-name"></td>
+                    <td><input type="number" class="out-odo" min="0"></td>
+                    <td><input type="number" class="in-odo" min="0"></td>
+                    <td class="operate-km"></td>
+                    <td class="time-marker"></td>
+                    <td>
+                        <button class="btn-save">Save</button>
+                        <button class="btn-heldup">Heldup</button>
+                        <button class="btn-reset hidden">Reset</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function setupCustomSuggestions() {
+            document.querySelectorAll('.bus-input').forEach(input => setupSuggestForInput(input, busNumbers));
+            document.querySelectorAll('.driver-input').forEach(input => setupSuggestForInput(input, driverNumbers));
+        }
+        function setupSuggestForInput(input, dataArr) {
+            const suggestionDiv = input.parentElement.querySelector('.custom-suggestions');
+            let activeIndex = -1;
+            let filtered = [];
+            function renderSuggestions() {
+                suggestionDiv.innerHTML = '';
+                if (filtered.length === 0) {
+                    suggestionDiv.classList.remove('show');
+                    return;
+                }
+                filtered.slice(0, 20).forEach((item, idx) => {
+                    const div = document.createElement('div');
+                    div.textContent = item;
+                    if (idx === activeIndex) div.classList.add('active');
+                    div.onmousedown = (e) => {
+                        e.preventDefault();
+                        input.value = item;
+                        suggestionDiv.classList.remove('show');
+                        input.dispatchEvent(new Event('change'));
+                    };
+                    suggestionDiv.appendChild(div);
+                });
+                suggestionDiv.classList.add('show');
+            }
+            function updateSuggestions() {
+                const val = input.value.trim().toUpperCase();
+                if (val.length < 3) {
+                    filtered = [];
+                    activeIndex = -1;
+                    suggestionDiv.classList.remove('show');
+                    return;
+                }
+                filtered = dataArr.filter(item => item.toUpperCase().includes(val));
+                if (filtered.length === 0) {
+                    activeIndex = -1;
+                } else {
+                    activeIndex = 0;
+                }
+                renderSuggestions();
+            }
+            input.addEventListener('input', function() {
+                updateSuggestions();
+            });
+            input.addEventListener('focus', function() {
+                updateSuggestions();
+            });
+            input.addEventListener('keydown', function(e) {
+                if (!suggestionDiv.classList.contains('show')) return;
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (filtered.length === 0) return;
+                    activeIndex = (activeIndex + 1) % filtered.length;
+                    renderSuggestions();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (filtered.length === 0) return;
+                    activeIndex = (activeIndex - 1 + filtered.length) % filtered.length;
+                    renderSuggestions();
+                } else if (e.key === 'Enter') {
+                    if (suggestionDiv.classList.contains('show') && filtered.length > 0 && activeIndex >= 0) {
+                        e.preventDefault();
+                        input.value = filtered[activeIndex];
+                        suggestionDiv.classList.remove('show');
+                        input.dispatchEvent(new Event('change'));
+                    }
+                } else if (e.key === 'Escape') {
+                    suggestionDiv.classList.remove('show');
+                }
+            });
+            document.addEventListener('mousedown', function(e){
+                if (!input.parentElement.contains(e.target)) suggestionDiv.classList.remove('show');
+            });
+        }
+
+        function setupDriverIdToName() {
+            document.querySelectorAll('.driver-input').forEach(input => {
+                input.addEventListener('input', function() {
+                    const row = input.closest('tr');
+                    const driverId = input.value.trim();
+                    const nameCell = row.querySelector('.driver-name');
+                    if (driverMaster[driverId]) {
+                        nameCell.textContent = driverMaster[driverId];
+                    } else {
+                        nameCell.textContent = '';
+                    }
+                });
+            });
+        }
+
+        function updateDateTime() {
+            const dt = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const date = dt.toLocaleDateString('en-US', options);
+            const time = dt.toLocaleTimeString('en-US', { hour12: false });
+            document.getElementById('datetime').textContent = `${date} ${time}`;
+        }
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show ' + type;
+            setTimeout(() => {
+                toast.className = 'toast ' + type;
+            }, 2500);
+        }
+
+        function getToday() {
+            const d = new Date();
+            return d.toISOString().slice(0,10);
+        }
+
+        function getTableData() {
+            const rows = document.querySelectorAll('#dutyTable tbody tr');
+            let data = [];
+            rows.forEach(row => {
+                data.push({
+                    bus: row.querySelector('.bus-input').value,
+                    driver: row.querySelector('.driver-input').value,
+                    driverName: row.querySelector('.driver-name').textContent,
+                    outOdo: row.querySelector('.out-odo').value,
+                    inOdo: row.querySelector('.in-odo').value,
+                    operateKm: row.querySelector('.operate-km').textContent,
+                    timeMarker: row.querySelector('.time-marker').textContent,
+                    status: row.classList.contains('heldup') ? 'Heldup' : (row.classList.contains('saved') ? 'Saved' : '')
+                });
+            });
+            return data;
+        }
+        function setTableData(data) {
+            const rows = document.querySelectorAll('#dutyTable tbody tr');
+            rows.forEach((row, i) => {
+                if (data && data[i]) {
+                    row.querySelector('.bus-input').value = data[i].bus || '';
+                    row.querySelector('.driver-input').value = data[i].driver || '';
+                    row.querySelector('.driver-name').textContent = data[i].driverName || '';
+                    row.querySelector('.out-odo').value = data[i].outOdo || '';
+                    row.querySelector('.in-odo').value = data[i].inOdo || '';
+                    row.querySelector('.operate-km').textContent = data[i].operateKm || '';
+                    row.querySelector('.time-marker').textContent = data[i].timeMarker || '';
+                    row.classList.remove('saved', 'heldup');
+                    if (data[i].status === 'Heldup') row.classList.add('heldup');
+                    else if (data[i].status === 'Saved') row.classList.add('saved');
+                    row.querySelector('.btn-reset').classList.remove('hidden');
+                } else {
+                    row.querySelector('.bus-input').value = '';
+                    row.querySelector('.driver-input').value = '';
+                    row.querySelector('.driver-name').textContent = '';
+                    row.querySelector('.out-odo').value = '';
+                    row.querySelector('.in-odo').value = '';
+                    row.querySelector('.operate-km').textContent = '';
+                    row.querySelector('.time-marker').textContent = '';
+                    row.classList.remove('saved', 'heldup');
+                    row.querySelector('.btn-reset').classList.add('hidden');
+                }
+            });
+            setupCustomSuggestions();
+            setupDriverIdToName();
+        }
+
+        function saveToStorage() {
+            const date = document.getElementById('opdate').value;
+            const misName = document.getElementById('misname').value;
+            const tableData = getTableData();
+            localStorage.setItem('duty_dashboard_' + date, JSON.stringify({misName, tableData}));
+            document.getElementById('userNameText').textContent = misName || 'Select MIS Name';
+        }
+
+        function loadFromStorage() {
+            const date = document.getElementById('opdate').value;
+            const data = JSON.parse(localStorage.getItem('duty_dashboard_' + date) || '{}');
+            document.getElementById('misname').value = data.misName || '';
+            setTableData(data.tableData || []);
+            document.getElementById('userNameText').textContent = data.misName || 'Select MIS Name';
+        }
+
+        function clearTableData() {
+            setTableData([]);
+        }
+
+        function setupOdoListeners() {
+            document.querySelectorAll('.out-odo, .in-odo').forEach(input => {
+                input.addEventListener('input', function() {
+                    const row = input.closest('tr');
+                    const outOdoVal = row.querySelector('.out-odo').value;
+                    const inOdoVal = row.querySelector('.in-odo').value;
+                    const schKm = parseFloat(row.querySelector('.sch-km').textContent) || 0;
+                    const operateKmCell = row.querySelector('.operate-km');
+                    if (outOdoVal !== "" && inOdoVal !== "") {
+                        const outOdo = parseFloat(outOdoVal);
+                        const inOdo = parseFloat(inOdoVal);
+                        let operateKm = inOdo - outOdo;
+                        if (operateKm < 0 || operateKm > schKm + 30) {
+                            operateKmCell.textContent = '';
+                        } else {
+                            operateKmCell.textContent = operateKm.toFixed(1);
+                        }
+                    } else {
+                        operateKmCell.textContent = '';
+                    }
+                    saveToStorage();
+                });
+            });
+        }
+
+        function setupSaveButtons() {
+            document.querySelectorAll('.btn-save, .btn-heldup').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const row = btn.closest('tr');
+                    const outOdoVal = row.querySelector('.out-odo').value;
+                    const inOdoVal = row.querySelector('.in-odo').value;
+                    const schKm = parseFloat(row.querySelector('.sch-km').textContent) || 0;
+                    if (outOdoVal === "" || inOdoVal === "") {
+                        showToast('Please enter both Out ODO and In ODO before saving!', 'error');
+                        return;
+                    }
+                    const outOdo = parseFloat(outOdoVal);
+                    const inOdo = parseFloat(inOdoVal);
+                    let operateKm = inOdo - outOdo;
+                    if (operateKm < 0) {
+                        showToast('Operate Km cannot be negative!', 'error');
+                        return;
+                    }
+                    if (operateKm > schKm + 30) {
+                        showToast('Operate Km cannot be more than Sch. Km + 30!', 'error');
+                        return;
+                    }
+                    row.classList.remove('saved', 'heldup');
+                    if (btn.classList.contains('btn-save')) {
+                        row.classList.add('saved');
+                    } else {
+                        row.classList.add('heldup');
+                    }
+                    const now = new Date();
+                    let winName = window.name || "NoWindowName";
+                    const timeMarker = winName + ' | ' +
+                        now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+                    row.querySelector('.time-marker').textContent = timeMarker;
+                    row.querySelector('.btn-reset').classList.remove('hidden');
+                    saveToStorage();
+                    showToast('Data saved successfully!', 'success');
+                });
+            });
+        }
+
+        function setupResetButtons() {
+            document.querySelectorAll('.btn-reset').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const row = btn.closest('tr');
+                    row.querySelector('.bus-input').value = '';
+                    row.querySelector('.driver-input').value = '';
+                    row.querySelector('.driver-name').textContent = '';
+                    row.querySelector('.out-odo').value = '';
+                    row.querySelector('.in-odo').value = '';
+                    row.querySelector('.operate-km').textContent = '';
+                    row.querySelector('.time-marker').textContent = '';
+                    row.classList.remove('saved', 'heldup');
+                    btn.classList.add('hidden');
+                    saveToStorage();
+                    setupCustomSuggestions();
+                    setupDriverIdToName();
+                    showToast('Row reset!', 'success');
+                });
+            });
+        }
+
+        function setupMisNameChange() {
+            document.getElementById('misname').addEventListener('change', saveToStorage);
+        }
+
+        function setupInputSaveEvents() {
+            document.querySelectorAll('.bus-input, .driver-input, .out-odo, .in-odo').forEach(input => {
+                input.addEventListener('change', saveToStorage);
+                input.addEventListener('input', saveToStorage);
+            });
+            setupDriverIdToName();
+        }
+
+        document.getElementById('opdate').addEventListener('change', function() {
+            clearTableData();
+            saveToStorage();
+            loadFromStorage();
+            setupCustomSuggestions();
+            setupInputSaveEvents();
+            setupOdoListeners();
+            setupSaveButtons();
+            setupResetButtons();
+            setupDriverIdToName();
+        });
+
+        window.addEventListener('DOMContentLoaded', function() {
+            generateDutyRows();
+            const opdate = document.getElementById('opdate');
+            if (!opdate.value) opdate.value = getToday();
+            loadFromStorage();
+            setupCustomSuggestions();
+            setupInputSaveEvents();
+            setupOdoListeners();
+            setupSaveButtons();
+            setupResetButtons();
+            setupMisNameChange();
+            setupDriverIdToName();
+        });
+
+        document.getElementById('opdate').addEventListener('change', function() {
+            loadFromStorage();
+            setupCustomSuggestions();
+            setupInputSaveEvents();
+            setupOdoListeners();
+            setupSaveButtons();
+            setupResetButtons();
+            setupDriverIdToName();
+        });
+
+        document.getElementById('downloadExcel').addEventListener('click', function() {
+            let csv = '';
+            const depotName = 'INDRAPRASTHA DEPOT';
+            const misName = document.getElementById('misname').value || '';
+            const opdate = document.getElementById('opdate').value || '';
+            csv += 'MIS Name:,' + misName + '\n';
+            csv += 'Date:,' + opdate + '\n';
+            const headerCells = document.querySelectorAll('#dutyTable thead th');
+            let headers = ['Depot Name'];
+            headerCells.forEach(cell => headers.push(cell.textContent.trim()));
+            csv += headers.join(',') + '\n';
+            const rows = document.querySelectorAll('#dutyTable tbody tr');
+            rows.forEach(row => {
+                let rowData = [];
+                rowData.push(depotName); // Depot Name
+                rowData.push(row.cells[0].textContent.trim()); // S.No.
+                rowData.push(row.cells[1].textContent.trim()); // Duty No
+                rowData.push(row.cells[2].textContent.trim()); // Sch. Km
+                // Bus
+                const busInput = row.querySelector('.bus-input');
+                rowData.push(busInput ? busInput.value : '');
+                // Driver
+                const driverInput = row.querySelector('.driver-input');
+                rowData.push(driverInput ? driverInput.value : '');
+                // Driver Name
+                const driverName = row.querySelector('.driver-name');
+                rowData.push(driverName ? driverName.textContent : '');
+                // Out ODO
+                const outOdo = row.querySelector('.out-odo');
+                rowData.push(outOdo ? outOdo.value : '');
+                // In ODO
+                const inOdo = row.querySelector('.in-odo');
+                rowData.push(inOdo ? inOdo.value : '');
+                // Operate Km
+                const operateKm = row.querySelector('.operate-km');
+                rowData.push(operateKm ? operateKm.textContent : '');
+                // Time Marker
+                const timeMarker = row.querySelector('.time-marker');
+                rowData.push(timeMarker ? timeMarker.textContent : '');
+                // Action (leave blank)
+                rowData.push('');
+                csv += rowData.join(',') + '\n';
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'duty_assignment.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        });
+
+        // ========== GOOGLE SHEET SAVE BUTTON ==========
+        document.getElementById('saveToGoogleSheet').addEventListener('click', function() {
+            const depotName = 'INDRAPRASTHA DEPOT';
+            const operationDate = document.getElementById('opdate').value || '';
+            const misName = document.getElementById('misname').value || '';
+            const rows = document.querySelectorAll('#dutyTable tbody tr');
+            let dataToSend = [];
+
+            rows.forEach((row, idx) => {
+                if (row.classList.contains('saved') || row.classList.contains('heldup')) {
+                    dataToSend.push({
+                        "Depot Name": depotName,
+                        "Operation Date": operationDate,
+                        "MIS Name": misName,
+                        "S.No.": row.cells[0].textContent.trim(),
+                        "Duty No": row.cells[1].textContent.trim(),
+                        "Sch. Km": row.cells[2].textContent.trim(),
+                        "Bus Number": row.querySelector('.bus-input').value,
+                        "Driver ID": row.querySelector('.driver-input').value,
+                        "Driver Name": row.querySelector('.driver-name').textContent,
+                        "Out ODO": row.querySelector('.out-odo').value,
+                        "In ODO": row.querySelector('.in-odo').value,
+                        "Operate Km": row.querySelector('.operate-km').textContent,
+                        "Time Marker": row.querySelector('.time-marker').textContent,
+                        "Status": row.classList.contains('heldup') ? "Heldup" : "Saved"
+                    });
+                }
+            });
+
+            if (dataToSend.length === 0) {
+                showToast('No saved or heldup rows to send!', 'error');
+                return;
+            }
+
+            fetch('https://script.google.com/macros/s/AKfycbwOMtukqQRw_b6-AdNL9Pu3h91wphydp8NYMvpxX4-S/dev', { // <-- यहाँ अपना Web App URL डालें
+                method: 'POST',
+                body: JSON.stringify(dataToSend),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.text())
+            .then(result => {
+                showToast(result, 'success');
+            })
+            .catch(error => {
+                showToast('Error: ' + error, 'error');
+            });
+        });
+
+    </script>
+</body>
+</html>
